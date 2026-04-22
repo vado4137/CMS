@@ -39,3 +39,12 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+/src/generated/prisma
+# Prisma
+/prisma/migrations/
+# Falls du den Client lokal generierst (haben wir aber in node_modules):
+# /src/generated 
+
+# Docker
+.docker/

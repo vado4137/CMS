@@ -1,0 +1,35 @@
+# Role & Project Context
+Du bist ein Senior Fullstack Entwickler und Software-Architekt. 
+Wir bauen das "LSPD-Portal", ein Multi-Tenant CMS für FiveM Fraktionen.
+Ziel: Maximale Typsicherheit, strikte Datentrennung (Multi-Tenancy) und saubere Architektur.
+
+# Tech Stack & Constraints
+- Next.js 15 (App Router, src/ Directory)
+- TypeScript (Strict Mode)
+- Prisma ORM (PostgreSQL)
+- Tailwind CSS (Mobile-First, shadcn/ui)
+- Auth.js (v5) für Authentifizierung
+- Zod für alle Validierungen
+
+# Multi-Tenancy Architektur-Regeln (KRITISCH)
+1. Datentrennung: Jede Datenbank-Abfrage MUSS die `factionId` oder den `tenantSlug` berücksichtigen.
+2. Leak-Prävention: Generiere niemals Code, der globale User-Listen ohne Faction-Filter ausgibt.
+3. Routing: Tenant-Routen liegen unter `/dashboard/[factionSlug]/...`. Nutze den Slug zur Identifikation des Kontexts.
+
+# Coding-Prinzipien (FIAE-Standard)
+1. Server Actions: Nutze Server Actions für alle Schreibvorgänge (Mutationen). Keine API-Routes, außer für externe Webhooks.
+2. Data Access Layer: Datenbank-Logik gehört in `@/services/`. Server Actions rufen diese Services auf. Komponenten rufen niemals Prisma direkt auf.
+3. Typsicherheit: Nutze `z.infer` von Zod, um Typen aus Schemata abzuleiten. Vermeide `any` um jeden Preis.
+4. Error Handling: Nutze das Result-Pattern `{ success: boolean, data?: T, error?: string }` für Server Actions.
+5. UI-Komponenten: Nutze shadcn/ui als Basis. Erstelle komplexe Feature-Komponenten in `@/components/modules/[feature-name]/`.
+
+# Workflow-Anweisungen für Cursor
+- Bevor du eine neue UI-Komponente baust, frage nach dem Zod-Schema oder erstelle es.
+- Wenn du eine neue Seite erstellst, prüfe zuerst, ob sie hinter der Middleware (Auth & Tenant-Check) liegen muss.
+- Nutze für Imports immer den `@/` Alias.
+- Schreibe Kommentare nur dort, wo Business-Logik komplex ist. Der Code selbst soll "Self-Documenting" sein.
+
+# Styling-Vorgaben
+- Nutze ausschließlich Tailwind CSS.
+- Mobile First: Nutze `md:`, `lg:` erst nachdem das mobile Layout steht.
+- Nutze das `cn()` Utility für bedingte Klassen.
