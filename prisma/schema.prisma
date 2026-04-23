@@ -10,3 +10,115 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+// --- Auth.js Models ---
+model Account {
+  id                 String  @id @default(cuid())
+  userId             String
+  type               String
+  provider           String
+  providerAccountId  String
+  refresh_token      String?  @db.Text
+  access_token       String?  @db.Text
+  expires_at         Int?
+  token_type         String?
+  scope              String?
+  id_token           String?  @db.Text
+  session_state      String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  isSuperAdmin  Boolean @default(false)
+  accounts      Account[]
+  sessions      Session[]
+  memberships   Member[]
+}
+
+// --- Multi-Tenancy Models ---
+enum FactionType {
+  POLICE
+  MEDICAL
+  FIRE
+  GOVERNMENT
+  NEUTRAL
+}
+
+model Faction {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  type        FactionType @default(NEUTRAL) // <--- NEU
+  description String?
+  logoUrl     String?
+
+  members     Member[]
+  ranks       Rank[]
+  
+  // Verknüpfung zum CMS-Teil
+  landingPage LandingPage? // <--- Vorbereitung für Schritt 3
+}
+
+model LandingPage {
+  id          String   @id @default(cuid())
+  factionId   String   @unique
+  faction     Faction  @relation(fields: [factionId], references: [id], onDelete: Cascade)
+  
+  contentJson Json     @default("[]") // Hier liegen die CMS-Blöcke
+  published   Boolean  @default(false)
+  
+  updatedAt   DateTime @updatedAt
+}
+
+model Member {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id])
+  factionId     String
+  faction       Faction  @relation(fields: [factionId], references: [id])
+  rankId        String
+  rank          Rank     @relation(fields: [rankId], references: [id])
+  
+  // IC-Daten (Die Person im Spiel)
+  firstName     String   // Max
+  lastName      String   // Mustermann
+  badgeNumber   Int?     // Dienstnummer (z.B. 42)
+  phoneNumber   String?  // IC-Handynummer
+  dateOfBirth   DateTime? 
+  avatarUrl     String?  // Ein spezielles IC-Foto (getrennt vom Discord-Avatar)
+  
+  status        String   @default("ACTIVE") // ACTIVE, INACTIVE, SUSPENDED
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([userId, factionId])
+}
+
+model Rank {
+  id          String   @id @default(cuid())
+  name        String   // z.B. "Officer I", "Chief of Police"
+  level       Int      // Für die Hierarchie (0-10)
+  imageUrl    String?  // Pfad zum Abzeichen/Badge-Icon
+  
+  factionId   String
+  faction     Faction  @relation(fields: [factionId], references: [id])
+  
+  permissions Json     @default("{}")
+  members     Member[]
+}

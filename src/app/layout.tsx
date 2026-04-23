@@ -6,11 +6,12 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="de">
-      <body>
-        <main>{children}</main>
-        {/* Der Toaster muss hier stehen, damit er über allen Seiten liegt */}
-        <Toaster /> 
+    // suppressHydrationWarning verhindert, dass Extensions wie Dark Reader 
+    // den Hydration-Error im Dev-Modus auslösen.
+    <html lang="de" suppressHydrationWarning>
+      <body className="antialiased">
+        {children}
+        <Toaster />
       </body>
     </html>
   )
