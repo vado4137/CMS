@@ -7,10 +7,10 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { FactionType } from "@prisma/client"
 
 export function CreateFactionForm() {
   const [loading, setLoading] = useState(false)
+  const FACTION_TYPES = ["LEO", "MEDIC", "FIRE", "NEUTRAL", "CRIME"];
 
   async function handleSubmit(formData: FormData) {
     setLoading(true)
@@ -45,9 +45,9 @@ export function CreateFactionForm() {
             <SelectValue placeholder="Typ wählen" />
           </SelectTrigger>
           <SelectContent>
-            {Object.values(FactionType).map((type) => (
-              <SelectItem key={type} value={type}>{type}</SelectItem>
-            ))}
+          {FACTION_TYPES.map((type) => (
+            <SelectItem key={type} value={type}>{type}</SelectItem>
+          ))}
           </SelectContent>
         </Select>
       </div>
