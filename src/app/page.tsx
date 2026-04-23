@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import Link from 'next/link';
 
 export default function Home() {
   return (
@@ -12,7 +13,9 @@ export default function Home() {
           <p className="text-sm text-muted-foreground">
             Phase 0 erfolgreich abgeschlossen. Die UI-Komponenten sind einsatzbereit.
           </p>
+          <Link href="https://cms-production-e741.up.railway.app/api/auth/signin" passHref>
           <Button className="w-full">Dienst antreten</Button>
+        </Link>
         </CardContent>
       </Card>
     </div>
