@@ -1,7 +1,20 @@
-import NextAuth from "next-auth"
+import NextAuth, { type DefaultSession } from "next-auth"
 import Discord from "next-auth/providers/discord"
 import { PrismaAdapter } from "@auth/prisma-adapter"
 import db from "@/lib/db"
+
+declare module "next-auth" {
+  interface Session {
+    user: {
+      id: string
+      isSuperAdmin: boolean
+    } & DefaultSession["user"]
+  }
+
+  interface User {
+    isSuperAdmin: boolean
+  }
+}
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
     adapter: PrismaAdapter(db),
