@@ -1,4 +1,5 @@
-import { Toaster } from "@/components/ui/sonner" // Import aus dem neuen UI-Ordner
+import { Toaster } from "@/components/ui/sonner" 
+import { Copyright } from "@/components/shared/Copyright"; // 1. Import hinzufügen
 import "./globals.css";
 
 export default function RootLayout({
@@ -7,11 +8,13 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    // suppressHydrationWarning verhindert, dass Extensions wie Dark Reader 
-    // den Hydration-Error im Dev-Modus auslösen.
     <html lang="de" suppressHydrationWarning>
       <body className="antialiased">
         {children}
+        
+        {/* 2. Copyright Komponente einfügen */}
+        <Copyright /> 
+        
         <Toaster />
       </body>
     </html>
