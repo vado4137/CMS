@@ -5,6 +5,8 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button" // Button importieren
 import Link from "next/link" // Link importieren
 import { Edit3 } from "lucide-react" // Optional: Icon
+import { revalidatePath } from "next/cache"
+import { RecruitingToggle } from "./_components/RecruitingToggle"
 
 export default async function FactionAdminPage() {
   await ensureSuperAdmin()
@@ -27,19 +29,18 @@ export default async function FactionAdminPage() {
         </div>
 
         <div className="lg:col-span-2">
-          <h2 className="text-xl font-bold mb-4">Fraktionen ({factions.length})</h2>
-          <div className="grid sm:grid-cols-2 gap-4">
-            {factions.map((f) => (
-              <Card key={f.id} className="flex flex-col justify-between">
-                <CardHeader className="p-4">
-                  <div className="flex justify-between items-start">
-                    <CardTitle className="text-lg">{f.name}</CardTitle>
-                    <span className="text-[10px] bg-slate-100 px-2 py-0.5 rounded uppercase font-bold">
-                      {f.type}
-                    </span>
-                  </div>
-                  <code className="text-xs text-blue-600 block mt-1">/{f.slug}</code>
-                </CardHeader>
+        <h2 className="text-xl font-bold mb-4">Fraktionen ({factions.length})</h2>
+        <div className="grid sm:grid-cols-2 gap-4">
+          {factions.map((f) => (
+            <Card key={f.id} className="flex flex-col justify-between">
+              <CardHeader className="p-4 pb-2">
+                <div className="flex justify-between items-start">
+                  <CardTitle className="text-lg">{f.name}</CardTitle>
+                  {/* HIER DEN NEUEN SCHALTER EINSETZEN */}
+                  <RecruitingToggle factionId={f.id} initialStatus={f.isRecruiting} />
+                </div>
+                <code className="text-xs text-blue-600">/{f.slug}</code>
+              </CardHeader>
                 
                 {/* DER WEG ZUM EDITOR */}
                 <CardContent className="p-4 pt-0">
@@ -57,4 +58,15 @@ export default async function FactionAdminPage() {
       </div>
     </div>
   )
+}
+export async function toggleRecruiting(factionId: string, currentStatus: boolean) {
+  await ensureSuperAdmin();
+  
+  await db.faction.update({
+    where: { id: factionId },
+    data: { isRecruiting: !currentStatus }
+  });
+  
+  revalidatePath("/"); // Startseite aktualisieren
+  revalidatePath("/admin/factions");
 }

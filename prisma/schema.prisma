@@ -73,6 +73,13 @@ model Faction {
   
   // Verknüpfung zum CMS-Teil
   landingPage LandingPage? // <--- Vorbereitung für Schritt 3
+  isRecruiting Boolean @default(false)
+
+  // --- NEU: Diese Felder fehlten für die Gegenrelation ---
+  departments Department[]
+  locations   Location[]
+  auditLogs   AuditLog[]
+  trainings    Training[]
 }
 
 model LandingPage {
@@ -102,10 +109,17 @@ model Member {
   phoneNumber   String?  // IC-Handynummer
   dateOfBirth   DateTime? 
   avatarUrl     String?  // Ein spezielles IC-Foto (getrennt vom Discord-Avatar)
-  
+  notes        String?      @db.Text
   status        String   @default("ACTIVE") // ACTIVE, INACTIVE, SUSPENDED
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+  locationId   String?
+  location     Location? @relation(fields: [locationId], references: [id])
+  trainings    Training[]
+
+
+  // --- NEU: Gegenstück für die Abteilungen ---
+  departments   Department[]
 
   @@unique([userId, factionId])
 }
@@ -121,4 +135,49 @@ model Rank {
   
   permissions Json     @default("{}")
   members     Member[]
+
+  @@unique([factionId, level])
+}
+
+model Department {
+  id        String   @id @default(cuid())
+  name      String
+  shortName String?  
+  factionId String
+  faction   Faction  @relation(fields: [factionId], references: [id], onDelete: Cascade)
+  members   Member[] // Mitglieder können Abteilungen zugewiesen werden
+}
+
+model Location {
+  id        String   @id @default(cuid())
+  name      String   
+  factionId String
+  faction   Faction  @relation(fields: [factionId], references: [id], onDelete: Cascade)
+  members   Member[]
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  factionId   String
+  faction     Faction  @relation(fields: [factionId], references: [id], onDelete: Cascade)
+  memberId    String   // Der betroffene Officer 
+  actorId     String   // Der ausführende Chief/Admin 
+  action      String   // z.B. "RANK_UPDATE", "DEPT_ASSIGN" 
+  oldValue    String?
+  newValue    String?
+  createdAt   DateTime @default(now())
+}
+
+model Training {
+  id          String   @id @default(cuid())
+  name        String
+  shortName   String?  // z.B. "AGT" für Atemschutzgeräteträger
+  description String?  @db.Text
+  
+  factionId   String
+  faction     Faction  @relation(fields: [factionId], references: [id], onDelete: Cascade)
+  
+  members     Member[] // Many-to-Many: Ein Member kann viele Ausbildungen haben
+  
+  createdAt   DateTime @default(now())
 }

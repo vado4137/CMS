@@ -13,7 +13,7 @@ export default function Home() {
           <p className="text-sm text-muted-foreground">
             Phase 0 erfolgreich abgeschlossen. Die UI-Komponenten sind einsatzbereit.
           </p>
-          <Link href="https://cms-production-e741.up.railway.app/api/auth/signin" passHref>
+          <Link href={`${process.env.AUTH_URL}/api/auth/signin`} passHref>
           <Button className="w-full">Dienst antreten</Button>
         </Link>
         </CardContent>

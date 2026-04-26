@@ -81,3 +81,15 @@ export async function updateLandingPage(factionId: string, blocks: any[]) {
       return { error: "Fehler beim Speichern der Seite." };
     }
   }
+  export async function toggleRecruiting(factionId: string, currentStatus: boolean) {
+    await ensureSuperAdmin();
+    
+    await db.faction.update({
+      where: { id: factionId },
+      data: { isRecruiting: !currentStatus }
+    });
+    
+    revalidatePath("/"); 
+    revalidatePath("/admin/factions");
+    return { success: true };
+  }

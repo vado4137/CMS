@@ -16,6 +16,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         // 1. Die ID anhängen
         if (session.user) {
           session.user.id = user.id;
+          session.user.isSuperAdmin = user.isSuperAdmin;
   
           // 2. Alle Memberships dieses Users aus der DB laden
           const memberships = await db.member.findMany({

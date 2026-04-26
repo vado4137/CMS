@@ -1,52 +1,52 @@
 import { auth } from "@/auth"
-import db from "@/lib/db"
-import { cache } from "react"
 import { redirect } from "next/navigation"
+import db from "@/lib/db"
+import { PermissionKey } from "@/config/permissions"
 
-/**
- * Holt den aktuellen Member-Kontext für eine Fraktion.
- * Durch 'cache' wird die DB-Abfrage innerhalb eines Request-Zyklus nur einmal ausgeführt.
- */
-export const getMemberContext = cache(async (factionSlug: string) => {
+export async function verifyMembership(slug: string) {
   const session = await auth()
-  if (!session?.user?.id) return null
+  if (!session?.user?.id) redirect("/")
 
-  // Wir suchen den Member anhand der UserID und des Fraktion-Slugs
-  const member = await db.member.findFirst({
-    where: {
-      userId: session.user.id,
-      faction: { slug: factionSlug }
-    },
-    include: {
-      faction: true,
-      rank: true
-    }
-  })
+    const member = await db.member.findFirst({
+      where: { 
+        user: { id: session.user.id },
+        faction: { slug }
+      },
+      include: { 
+        faction: true, 
+        rank: true,
+        departments: true, // Für die Profil-Stats
+        trainings: true    // <--- DAS BEHEBT DEN FEHLER
+      }
+    });
 
-  return member
-})
-
-/**
- * Ein "Guard", der sofort abbricht, wenn der User kein Zugriff hat.
- * Ideal für Server Components am Anfang der Datei.
- */
-export async function verifyMembership(factionSlug: string) {
-  const member = await getMemberContext(factionSlug)
+  if (!member) redirect("/dashboard")
   
-  if (!member || member.status !== "ACTIVE") {
-    redirect("/dashboard")
+  // Wir hängen das SuperAdmin-Flag aus der Session an das Objekt an
+  return { 
+    ...member, 
+    isGlobalAdmin: (session.user as any).isSuperAdmin === true 
   }
-
-  return member
 }
 
-/**
- * Utility zum Prüfen von Berechtigungen aus dem JSON-Feld des Rangs
- */
-export async function hasPermission(factionSlug: string, permission: string) {
-  const member = await getMemberContext(factionSlug)
-  if (!member) return false
+export function hasPermission(member: any, permission: PermissionKey): boolean {
+  // 1. GLOBALER ADMIN BYPASS: Darf alles
+  if (member.isGlobalAdmin) return true;
 
-  const permissions = member.rank.permissions as Record<string, boolean>
-  return !!permissions[permission]
+  // 2. RANG-CHECK
+  if (!member?.rank?.permissions) return false;
+  
+  const perms = member.rank.permissions as Record<string, boolean>;
+  return !!perms[permission];
+}
+
+export async function verifySettingsAccess(slug: string) {
+  const member = await verifyMembership(slug);
+  
+  // Wenn kein globaler Admin UND kein MANAGE_FACTION Recht -> Rauswurf
+  if (!hasPermission(member, "MANAGE_FACTION")) {
+    redirect(`/management/${slug}`);
+  }
+  
+  return member;
 }
