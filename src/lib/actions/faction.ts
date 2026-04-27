@@ -6,6 +6,7 @@ import { ensureSuperAdmin } from "@/lib/admin-check"
 import { revalidatePath } from "next/cache"
 import { FactionType } from "@prisma/client"
 import { auth } from "@/auth" // HIER: Den Import für Auth.js hinzufügen
+import { redirect } from "next/navigation"
 
 // 1. Validierungsschema definieren
 const CreateFactionSchema = z.object({
@@ -167,4 +168,50 @@ export async function updateLandingPage(factionId: string, blocks: any[]) {
   
     revalidatePath("/dashboard");
     return { success: true };
+  }
+
+  export async function onboardingAction(formData: FormData) {
+    const session = await auth();
+    if (!session?.user?.id) throw new Error("Nicht authentifiziert");
+  
+    const firstName = formData.get("firstName") as string;
+    const lastName = formData.get("lastName") as string;
+    const badgeNumber = parseInt(formData.get("badgeNumber") as string);
+  
+    // 1. Fraktion suchen
+    const faction = await db.faction.findFirst({ where: { slug: "safd" } });
+    if (!faction) throw new Error("Die Fraktion 'safd' wurde noch nicht im Admin-Panel erstellt!");
+  
+    // 2. Start-Rang suchen
+    const startRank = await db.rank.findFirst({ 
+      where: { factionId: faction.id, level: 0 } 
+    });
+    
+    if (!startRank) throw new Error("Kein Start-Rang (Level 0) für diese Fraktion gefunden!");
+  
+    // 3. Dienstnummer-Check
+    const badgeExists = await db.member.findFirst({
+      where: { factionId: faction.id, badgeNumber }
+    });
+    
+    if (badgeExists) return { error: "badge_taken" };
+  
+    try {
+      await db.member.create({
+        data: {
+          userId: session.user.id,
+          factionId: faction.id,
+          rankId: startRank.id,
+          firstName,
+          lastName,
+          badgeNumber,
+          status: "ACTIVE"
+        }
+      });
+    } catch (e) {
+      throw new Error("Datenbankfehler beim Erstellen des Charakters.");
+    }
+  
+    // Weiterleitung nach Erfolg
+    revalidatePath(`/management/${faction.slug}`);
   }

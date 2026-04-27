@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { AlertCircle } from "lucide-react"
+import { SubmitButton } from "./_components/SubmitButton"
 
 export default async function OnboardingPage(props: { 
   searchParams: Promise<{ error?: string }> 
@@ -25,6 +26,8 @@ export default async function OnboardingPage(props: {
   })
   
   if (existingMember) redirect("/dashboard")
+
+   
 
   // 3. Server Action für den Form-Submit
   async function createCharacter(formData: FormData) {
@@ -115,7 +118,9 @@ export default async function OnboardingPage(props: {
               <Label htmlFor="badgeNumber">Dienstnummer</Label>
               <Input id="badgeNumber" name="badgeNumber" type="number" placeholder="z.B. 42" required />
             </div>
-            <Button type="submit" className="w-full">Dienst antreten</Button>
+
+            {/* HIER DEN ALTEN BUTTON DURCH DIE NEUE KOMPONENTE ERSETZEN */}
+            <SubmitButton /> 
           </form>
         </CardContent>
       </Card>
