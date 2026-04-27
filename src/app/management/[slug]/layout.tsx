@@ -30,6 +30,13 @@ export default async function FactionManagementLayout({
         </div>
 
         <nav className="flex-1 p-4 space-y-8 overflow-y-auto pt-6">
+        <div className="mb-6 pb-4 border-b">
+          <SidebarLink 
+            href="/dashboard" 
+            name="Hauptmenü" 
+            icon="home" // Nutzt das neue Mapping
+          />
+        </div>
           {/* Haupt-Navigation */}
           <div className="space-y-1">
             <p className="px-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Dienstbetrieb</p>
@@ -52,6 +59,7 @@ export default async function FactionManagementLayout({
               {SETTINGS_NAV.map((item) => {
                 if (item.permission && !hasPermission(member, item.permission as any)) return null
                 return (
+                  
                     <SidebarLink 
                     key={item.href} 
                     href={`/management/${slug}${item.href}`} 

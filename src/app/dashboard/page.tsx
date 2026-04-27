@@ -50,10 +50,16 @@ export default async function GlobalDashboard() {
         ))}
         
         {/* Platzhalter für neue Bewerbungen */}
-        <Card className="border-dashed border-2 flex flex-col items-center justify-center p-6 text-center opacity-60">
-          <CardDescription>Keine weiteren Charaktere verfügbar.</CardDescription>
-          <Button variant="link" className="mt-2" disabled>Neue Fraktion beitreten (Coming Soon)</Button>
-        </Card>
+        <Link href="/dashboard/join">
+          <Card className="border-dashed border-2 flex flex-col items-center justify-center p-6 text-center hover:bg-slate-50 transition-colors cursor-pointer h-full group">
+            <CardDescription className="group-hover:text-blue-600 transition-colors">
+              Möchtest du einer neuen Fraktion beitreten?
+            </CardDescription>
+            <Button variant="outline" className="mt-4 border-dashed">
+              Beitritts-Katalog öffnen
+            </Button>
+          </Card>
+        </Link>
       </div>
     </div>
   )

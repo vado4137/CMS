@@ -12,11 +12,12 @@ import {
   MapPin, 
   GraduationCap,
   Settings,
-  History
+  History,
+  Home // Bereits von dir importiert
 } from "lucide-react"
 
-// Das Mapping-Objekt wandelt den String wieder in ein Icon um
-const ICON_MAP = {dashboard: LayoutDashboard,
+const ICON_MAP = {
+  dashboard: LayoutDashboard,
   users: Users,
   settings: Settings,
   files: FileText,
@@ -24,14 +25,15 @@ const ICON_MAP = {dashboard: LayoutDashboard,
   shield: ShieldAlert,
   building: Building2,
   map: MapPin,
-  graduation: GraduationCap, // HIER: Mappe den Namen "graduation" auf das Icon
-  history: History
+  graduation: GraduationCap,
+  history: History,
+  home: Home // NEU: Jetzt ist das Icon über icon="home" nutzbar
 }
 
 interface SidebarLinkProps {
   href: string
   name: string
-  icon: keyof typeof ICON_MAP // Verwendet die Keys aus unserem Mapping
+  icon: keyof typeof ICON_MAP
   color?: "blue" | "red"
 }
 
@@ -39,7 +41,6 @@ export function SidebarLink({ href, name, icon, color = "blue" }: SidebarLinkPro
   const pathname = usePathname()
   const isActive = pathname === href
   
-  // Icon-Komponente auswählen
   const IconComponent = ICON_MAP[icon]
 
   const activeStyles = color === "blue" 

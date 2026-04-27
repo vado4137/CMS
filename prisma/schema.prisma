@@ -53,11 +53,12 @@ model User {
 
 // --- Multi-Tenancy Models ---
 enum FactionType {
-  POLICE
-  MEDICAL
+  LEO      // statt POLICE
+  MEDIC    // statt MEDICAL
   FIRE
   GOVERNMENT
   NEUTRAL
+  CRIME    // Neu hinzufügen
 }
 
 model Faction {
@@ -100,7 +101,7 @@ model Member {
   userId        String
   user          User     @relation(fields: [userId], references: [id])
   factionId     String
-  faction       Faction  @relation(fields: [factionId], references: [id])
+  faction       Faction  @relation(fields: [factionId], references: [id],onDelete: Cascade)
   rankId        String
   rank          Rank     @relation(fields: [rankId], references: [id])
   instructorRequests TrainingRequest[] @relation("Instructor")
@@ -138,7 +139,7 @@ model Rank {
   imageUrl    String?  // Pfad zum Abzeichen/Badge-Icon
   
   factionId   String
-  faction     Faction  @relation(fields: [factionId], references: [id])
+  faction     Faction  @relation(fields: [factionId], references: [id], onDelete: Cascade)
   
   permissions Json     @default("{}")
   members     Member[]
@@ -214,7 +215,7 @@ model TrainingType {
   name        String
   description String?           @db.Text
   factionId   String
-  faction     Faction           @relation(fields: [factionId], references: [id])
+  faction     Faction           @relation(fields: [factionId], references: [id], onDelete: Cascade)
   requests    TrainingRequest[]
   authorizedInstructors Member[] @relation("AuthorizedInstructors")
 }

@@ -5,6 +5,7 @@ import db from "@/lib/db"
 import { ensureSuperAdmin } from "@/lib/admin-check"
 import { revalidatePath } from "next/cache"
 import { FactionType } from "@prisma/client"
+import { auth } from "@/auth" // HIER: Den Import für Auth.js hinzufügen
 
 // 1. Validierungsschema definieren
 const CreateFactionSchema = z.object({
@@ -17,10 +18,8 @@ const CreateFactionSchema = z.object({
 })
 
 export async function createFaction(formData: FormData) {
-  // 2. Sicherheits-Check: Nur Super-Admins!
   await ensureSuperAdmin()
 
-  // 3. Daten extrahieren und validieren
   const validatedFields = CreateFactionSchema.safeParse({
     name: formData.get("name"),
     slug: formData.get("slug"),
@@ -29,13 +28,17 @@ export async function createFaction(formData: FormData) {
   })
 
   if (!validatedFields.success) {
-    return { error: "Ungültige Eingaben", details: validatedFields.error.flatten() }
+    // Gib die genauen Fehlerdetails in der Konsole aus
+    console.log("Zod-Fehler:", JSON.stringify(validatedFields.error.flatten(), null, 2));
+    return { 
+      error: "Ungültige Eingaben", 
+      details: validatedFields.error.flatten() 
+    }
   }
 
   const { name, slug, type, description } = validatedFields.data
 
   try {
-    // 4. Transaktion: Fraktion erstellen UND direkt eine leere LandingPage anlegen
     const newFaction = await db.$transaction(async (tx) => {
       const faction = await tx.faction.create({
         data: {
@@ -43,17 +46,25 @@ export async function createFaction(formData: FormData) {
           slug,
           type,
           description,
-          // Wir legen direkt den CMS-Eintrag mit an
+          // 1. LandingPage erstellen
           landingPage: {
             create: {} 
+          },
+          // 2. NEU: Default Rang 0 (Rekrut) erstellen
+          ranks: {
+            create: {
+              name: "Rekrut",
+              level: 0,
+              permissions: {}, // Startet mit leeren Rechten
+            }
           }
         }
       })
       return faction
     })
 
-    // Cache löschen, damit die neue Fraktion im Hub erscheint
     revalidatePath("/dashboard")
+    revalidatePath("/admin/factions")
     return { success: true, data: newFaction }
 
   } catch (error: any) {
@@ -91,5 +102,69 @@ export async function updateLandingPage(factionId: string, blocks: any[]) {
     
     revalidatePath("/"); 
     revalidatePath("/admin/factions");
+    return { success: true };
+  }
+
+  export async function deleteFaction(id: string) {
+    await ensureSuperAdmin();
+    const memberCount = await db.member.count({ where: { factionId: id } });
+    
+    if (memberCount > 0) {
+      throw new Error("Fraktion kann nicht gelöscht werden, da sie noch Mitglieder hat.");
+    }
+  
+    await db.faction.delete({ where: { id } });
+  
+    revalidatePath("/admin/factions");
+    return { success: true };
+  }
+
+  export async function updateFaction(id: string, data: { name: string, slug: string }) {
+    await ensureSuperAdmin();
+    
+    await db.faction.update({
+      where: { id },
+      data: {
+        name: data.name,
+        slug: data.slug.toLowerCase()
+      }
+    });
+  
+    revalidatePath("/admin/factions");
+    return { success: true };
+  }
+
+  // In deiner faction.ts hinzufügen
+  export async function joinFaction(
+    factionId: string, 
+    icData: { firstName: string, lastName: string, badgeNumber: number } // badgeNumber hinzugefügt
+  ) {
+    const session = await auth();
+    if (!session?.user?.id) throw new Error("Nicht eingeloggt");
+  
+    // 1. Finde den Standard-Rang (Level 0)
+    const defaultRank = await db.rank.findFirst({
+      where: { 
+        factionId: factionId,
+        level: 0 
+      }
+    });
+  
+    if (!defaultRank) throw new Error("Diese Fraktion hat noch keine Ränge konfiguriert.");
+  
+    // 2. Erstelle die Mitgliedschaft mit Dienstnummer
+    await db.member.create({
+      data: {
+        userId: session.user.id,
+        factionId: factionId,
+        rankId: defaultRank.id,
+        firstName: icData.firstName,
+        lastName: icData.lastName,
+        badgeNumber: icData.badgeNumber, // NEU: Dienstnummer speichern
+        status: "ACTIVE"
+      }
+    });
+  
+    revalidatePath("/dashboard");
     return { success: true };
   }
