@@ -80,6 +80,8 @@ model Faction {
   locations   Location[]
   auditLogs   AuditLog[]
   trainings    Training[]
+  trainingTypes    TrainingType[]
+  trainingRequests TrainingRequest[]
 }
 
 model LandingPage {
@@ -101,7 +103,10 @@ model Member {
   faction       Faction  @relation(fields: [factionId], references: [id])
   rankId        String
   rank          Rank     @relation(fields: [rankId], references: [id])
-  
+  traineeRequests    TrainingRequest[] @relation("Trainee")
+  instructorRequests TrainingRequest[] @relation("Instructor")
+
+
   // IC-Daten (Die Person im Spiel)
   firstName     String   // Max
   lastName      String   // Mustermann
@@ -116,6 +121,7 @@ model Member {
   locationId   String?
   location     Location? @relation(fields: [locationId], references: [id])
   trainings    Training[]
+  absences    Absence[]
 
 
   // --- NEU: Gegenstück für die Abteilungen ---
@@ -180,4 +186,55 @@ model Training {
   members     Member[] // Many-to-Many: Ein Member kann viele Ausbildungen haben
   
   createdAt   DateTime @default(now())
+}
+
+model Absence {
+  id          String   @id @default(cuid())
+  memberId    String
+  member      Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  startDate   DateTime
+  endDate     DateTime
+  reason      String?  @db.Text
+  createdAt   DateTime @default(now())
+
+  @@index([memberId])
+}
+
+enum TrainingStatus {
+  OFFEN
+  PLANNING
+  PENDING
+  FINISH
+  DNF
+}
+
+model TrainingType {
+  id          String            @id @default(cuid())
+  name        String
+  description String?           @db.Text
+  factionId   String
+  faction     Faction           @relation(fields: [factionId], references: [id])
+  requests    TrainingRequest[]
+}
+
+model TrainingRequest {
+  id            String         @id @default(cuid())
+  status        TrainingStatus @default(OFFEN)
+  
+  // Der Schüler
+  memberId      String?
+  member        Member?        @relation("Trainee", fields: [memberId], references: [id])
+  
+  // Der Ausbilder (optional, bis angenommen)
+  instructorId  String?
+  instructor    Member?        @relation("Instructor", fields: [instructorId], references: [id])
+  
+  typeId        String
+  trainingType  TrainingType   @relation(fields: [typeId], references: [id])
+  
+  factionId     String
+  faction       Faction        @relation(fields: [factionId], references: [id])
+
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
 }

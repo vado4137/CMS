@@ -9,18 +9,23 @@ import {
   FileText, 
   ShieldAlert, 
   Building2, 
-  MapPin 
+  MapPin, 
+  GraduationCap,
+  Settings,
+  History
 } from "lucide-react"
 
 // Das Mapping-Objekt wandelt den String wieder in ein Icon um
-const ICON_MAP = {
-  dashboard: LayoutDashboard,
+const ICON_MAP = {dashboard: LayoutDashboard,
   users: Users,
-  calendar: Calendar,
+  settings: Settings,
   files: FileText,
+  calendar: Calendar,
   shield: ShieldAlert,
   building: Building2,
-  map: MapPin
+  map: MapPin,
+  graduation: GraduationCap, // HIER: Mappe den Namen "graduation" auf das Icon
+  history: History
 }
 
 interface SidebarLinkProps {

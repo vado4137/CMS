@@ -2,67 +2,57 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { createTraining } from "@/lib/actions/training"
 import { toast } from "sonner"
-import { Plus, GraduationCap } from "lucide-react"
+import { GraduationCap, Loader2 } from "lucide-react"
 
-export function CreateTrainingDialog({ factionSlug }: { factionSlug: string }) {
-  const [open, setOpen] = useState(false)
+export function CreateTrainingDialog({ factionSlug, trainingTypes }: any) {
   const [loading, setLoading] = useState(false)
+  const [selectedType, setSelectedType] = useState("")
 
-  async function handleSubmit(formData: FormData) {
+  async function handleSubmit() {
+    if (!selectedType) return toast.error("Bitte wähle einen Ausbildungstyp aus.")
+    
     setLoading(true)
-    const name = formData.get("name") as string
-    const shortName = formData.get("shortName") as string
-
     try {
-      const res = await createTraining(factionSlug, name, shortName)
-      if (res.success) {
-        toast.success(`Zertifikat "${name}" zum Katalog hinzugefügt!`)
-        setOpen(false)
-      }
-    } catch (error) {
-      toast.error("Fehler beim Erstellen der Ausbildung")
+      // Nur noch die typeId senden - memberId wird weggelassen
+      await createTraining(factionSlug, { 
+        typeId: selectedType 
+      })
+      toast.success("Offenes Training wurde im Kalender erstellt")
+    } catch (e) {
+      toast.error("Fehler beim Erstellen")
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white">
-          <Plus className="w-4 h-4" /> Ausbildung anlegen
-        </Button>
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <GraduationCap className="w-5 h-5 text-emerald-600" />
-            Neuer Lehrgang
-          </DialogTitle>
-          <DialogDescription>
-            Erstelle eine Qualifikation, die Mitgliedern in ihrer Dienstakte zugewiesen werden kann.
-          </DialogDescription>
-        </DialogHeader>
-        <form action={handleSubmit} className="space-y-4 pt-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">Bezeichnung der Ausbildung</Label>
-            <Input id="name" name="name" placeholder="z.B. Atemschutzgeräteträger" required />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="shortName">Kürzel / Zertifikat</Label>
-            <Input id="shortName" name="shortName" placeholder="z.B. AGT" />
-            <p className="text-[10px] text-muted-foreground italic">Wird als kompaktes Badge in der Mitgliederliste angezeigt.</p>
-          </div>
-          <Button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700" disabled={loading}>
-            {loading ? "Wird registriert..." : "Lehrgang speichern"}
-          </Button>
-        </form>
-      </DialogContent>
-    </Dialog>
+    <div className="space-y-6 pt-4">
+      <div className="space-y-2">
+        <label className="text-[10px] font-bold uppercase text-slate-400">
+          Welche Ausbildung bietest du an?
+        </label>
+        <Select onValueChange={setSelectedType}>
+          <SelectTrigger className="bg-white">
+            <SelectValue placeholder="Ausbildungstyp wählen..." />
+          </SelectTrigger>
+          <SelectContent>
+            {trainingTypes?.map((t: any) => (
+              <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <Button 
+        onClick={handleSubmit} 
+        className="w-full bg-emerald-600 hover:bg-emerald-700" 
+        disabled={loading || !selectedType}
+      >
+        {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : "Angebot veröffentlichen"}
+      </Button>
+    </div>
   )
 }
