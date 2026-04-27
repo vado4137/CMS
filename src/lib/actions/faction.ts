@@ -172,46 +172,49 @@ export async function updateLandingPage(factionId: string, blocks: any[]) {
 
   export async function onboardingAction(formData: FormData) {
     const session = await auth();
-    if (!session?.user?.id) throw new Error("Nicht authentifiziert");
+    if (!session?.user?.id) throw new Error("Nicht eingeloggt");
   
+    const factionId = formData.get("factionId") as string; // Von der Auswahl übernommen
     const firstName = formData.get("firstName") as string;
     const lastName = formData.get("lastName") as string;
     const badgeNumber = parseInt(formData.get("badgeNumber") as string);
   
-    // 1. Fraktion suchen
-    const faction = await db.faction.findFirst({ where: { slug: "safd" } });
-    if (!faction) throw new Error("Die Fraktion 'safd' wurde noch nicht im Admin-Panel erstellt!");
-  
-    // 2. Start-Rang suchen
-    const startRank = await db.rank.findFirst({ 
-      where: { factionId: faction.id, level: 0 } 
+    // 1. Die gewählte Fraktion finden
+    const faction = await db.faction.findUnique({ 
+      where: { id: factionId } 
     });
-    
-    if (!startRank) throw new Error("Kein Start-Rang (Level 0) für diese Fraktion gefunden!");
+    if (!faction) throw new Error("Fraktion nicht gefunden.");
   
-    // 3. Dienstnummer-Check
+    // 2. Dienstnummer-Check für diese spezifische Fraktion
     const badgeExists = await db.member.findFirst({
-      where: { factionId: faction.id, badgeNumber }
+      where: { factionId: faction.id, badgeNumber: badgeNumber }
     });
-    
-    if (badgeExists) return { error: "badge_taken" };
   
-    try {
-      await db.member.create({
-        data: {
-          userId: session.user.id,
-          factionId: faction.id,
-          rankId: startRank.id,
-          firstName,
-          lastName,
-          badgeNumber,
-          status: "ACTIVE"
-        }
-      });
-    } catch (e) {
-      throw new Error("Datenbankfehler beim Erstellen des Charakters.");
+    if (badgeExists) {
+      return redirect("/onboarding?error=badge_taken");
     }
   
-    // Weiterleitung nach Erfolg
-    revalidatePath(`/management/${faction.slug}`);
+    // 3. Rang-Check: Rekruten-Rang finden
+    const startRank = await db.rank.findFirst({ 
+      where: { factionId: faction.id, level: 0 }
+    });
+  
+    if (!startRank) {
+      throw new Error("Diese Fraktion hat noch keinen Rekruten-Rang (Level 0) eingerichtet.");
+    }
+  
+    // 4. Erstellen
+    await db.member.create({
+      data: {
+        userId: session.user.id,
+        factionId: faction.id,
+        rankId: startRank.id,
+        firstName,
+        lastName,
+        badgeNumber,
+        status: "ACTIVE"
+      }
+    });
+  
+    redirect(`/management/${faction.slug}`);
   }
