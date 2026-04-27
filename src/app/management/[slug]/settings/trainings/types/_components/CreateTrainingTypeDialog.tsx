@@ -1,64 +1,100 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { useState } from "react"
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogTrigger, 
+  DialogDescription 
+} from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { createTraining } from "@/lib/actions/training" // Import korrigiert
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { createTrainingType } from "@/lib/actions/training" // Nutzt die Typ-Erstellung
 import { toast } from "sonner"
-import { GraduationCap, Loader2 } from "lucide-react"
+import { Plus, BookOpen, Loader2 } from "lucide-react"
 
-export function CreateTrainingDialog({ factionSlug, members, trainingTypes }: any) {
+export function CreateTrainingTypeDialog({ factionSlug }: { factionSlug: string }) {
+  const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [selectedMember, setSelectedMember] = useState("")
-  const [selectedType, setSelectedType] = useState("")
 
-  async function handleSubmit() {
-    if (!selectedMember || !selectedType) return toast.error("Bitte alles ausfüllen")
-    
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
     setLoading(true)
+
+    const formData = new FormData(event.currentTarget)
+    const name = formData.get("name") as string
+    const description = formData.get("description") as string
+
     try {
-      await createTraining(factionSlug, { 
-        memberId: selectedMember, 
-        typeId: selectedType 
-      })
-      toast.success("Ausbildung eingetragen")
-    } catch (e) {
-      toast.error("Fehler beim Speichern")
+      // Ruft die Server Action mit Name und Beschreibung auf
+      const res = await createTrainingType(factionSlug, name, description)
+      if (res.success) {
+        toast.success(`Der Typ "${name}" wurde erfolgreich erstellt.`)
+        setOpen(false)
+      }
+    } catch (error: any) {
+      toast.error(error.message || "Fehler beim Erstellen")
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div className="space-y-4 pt-4">
-      <div className="space-y-2">
-        <label className="text-[10px] font-bold uppercase text-slate-400">Officer auswählen</label>
-        <Select onValueChange={setSelectedMember}>
-          <SelectTrigger className="bg-white"><SelectValue placeholder="Officer..." /></SelectTrigger>
-          <SelectContent>
-            {members?.map((m: any) => (
-              <SelectItem key={m.id} value={m.id}>{m.firstName} {m.lastName}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button className="gap-2 bg-blue-600 hover:bg-blue-700 text-white shadow-sm">
+          <Plus className="w-4 h-4" /> Typ hinzufügen
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <BookOpen className="w-5 h-5 text-blue-600" />
+            Neuer Ausbildungstyp
+          </DialogTitle>
+          <DialogDescription>
+            Definiere einen Lehrgang, der später im Kalender angeboten werden kann.
+          </DialogDescription>
+        </DialogHeader>
 
-      <div className="space-y-2">
-        <label className="text-[10px] font-bold uppercase text-slate-400">Ausbildungstyp</label>
-        <Select onValueChange={setSelectedType}>
-          <SelectTrigger className="bg-white"><SelectValue placeholder="Typ..." /></SelectTrigger>
-          <SelectContent>
-            {trainingTypes?.map((t: any) => (
-              <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+        <form onSubmit={handleSubmit} className="space-y-4 pt-4">
+          <div className="space-y-2">
+            <Label htmlFor="name">Name der Ausbildung</Label>
+            <Input 
+              id="name" 
+              name="name" 
+              placeholder="z.B. Atemschutzgeräteträger (AGT)" 
+              required 
+              autoFocus
+            />
+          </div>
 
-      <Button onClick={handleSubmit} className="w-full bg-emerald-600" disabled={loading}>
-        {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : "Als Offen eintragen"}
-      </Button>
-    </div>
+          <div className="space-y-2">
+            <Label htmlFor="description">Kurzbeschreibung / Inhalte</Label>
+            <Input 
+              id="description" 
+              name="description" 
+              placeholder="z.B. Theorie & Praxis im Brandcontainer..." 
+            />
+          </div>
+
+          <div className="pt-2">
+            <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 font-bold" disabled={loading}>
+              {loading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  Wird gespeichert...
+                </>
+              ) : (
+                "Im Katalog speichern"
+              )}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
   )
 }

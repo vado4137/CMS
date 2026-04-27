@@ -15,6 +15,7 @@ import { CreateTrainingDialog } from "../../settings/trainings/_components/Creat
 import { DateRange } from "react-day-picker" // NEU: Import für Zeiträume
 
 interface Props {
+    isOpen: boolean
     selectedRange: DateRange | undefined
     onClose: () => void
     factionSlug: string
@@ -24,18 +25,28 @@ interface Props {
   }
 
   export function CalendarActionDialog({ 
-    selectedRange, onClose, factionSlug, canManageTrainings, members, trainingTypes 
+    isOpen, selectedRange, onClose, factionSlug, canManageTrainings, members, trainingTypes 
   }: Props) {
   const [mode, setMode] = useState<"choice" | "absence" | "training">("choice")
 
   // Der Dialog öffnet sich, sobald mindestens ein Startdatum (from) vorhanden ist
   if (!selectedRange?.from) return null
 
-  // Text für die Anzeige des Zeitraums erstellen
-  const dateString = selectedRange.to 
-    ? `${selectedRange.from.toLocaleDateString("de-DE")} bis ${selectedRange.to.toLocaleDateString("de-DE")}`
-    : selectedRange.from.toLocaleDateString("de-DE")
+  // Wir resetten den Mode, wenn der Dialog geschlossen wird
+  const handleClose = () => {
+    setMode("choice")
+    onClose()
+  }
 
+  if (!isOpen) return null
+
+  // Text für die Anzeige des Zeitraums erstellen
+  const dateString = selectedRange?.from
+    ? selectedRange.to 
+      ? `${selectedRange.from.toLocaleDateString("de-DE")} bis ${selectedRange.to.toLocaleDateString("de-DE")}`
+      : selectedRange.from.toLocaleDateString("de-DE")
+    : ""
+    
   return (
     <Dialog open={!!selectedRange?.from} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[500px]">
@@ -81,10 +92,11 @@ interface Props {
             <p className="text-sm text-muted-foreground mb-4">Erstelle eine neue Ausbildung für einen Officer.</p>
             {/* Hier werden die Listen nun an den Dialog übergeben */}
             <CreateTrainingDialog 
-              factionSlug={factionSlug} 
-              members={members} 
-              trainingTypes={trainingTypes} 
-            />
+                factionSlug={factionSlug}
+                trainingTypes={trainingTypes}
+                // WICHTIG: Hier muss das Datum aus der Range übergeben werden!
+                selectedDate={selectedRange?.from} 
+                />
             <Button variant="ghost" onClick={() => setMode("choice")} className="w-full mt-4 text-xs">Zurück zur Auswahl</Button>
           </div>
         )}

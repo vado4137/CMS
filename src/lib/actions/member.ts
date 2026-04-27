@@ -75,21 +75,39 @@ export async function updateMemberDepartments(
     data: {
       badgeNumber?: number;
       notes?: string;
-      locationId?: string; // Neu hinzugefügt
+      locationId?: string;
     }
   ) {
+    // 1. Wir nennen die Variable 'actor'
     const actor = await verifyMembership(factionSlug);
     if (!hasPermission(actor, "MANAGE_MEMBERS")) throw new Error("Nicht autorisiert");
+    
+    if (data.badgeNumber) {
+      const existing = await db.member.findFirst({
+        where: {
+          // GEÄNDERT: Von 'admin.factionId' zu 'actor.factionId'
+          factionId: actor.factionId,
+          // GEÄNDERT: parseInt entfernt, da badgeNumber bereits ein 'number' ist
+          badgeNumber: data.badgeNumber, 
+          NOT: { id: memberId } 
+        }
+      });
+  
+      if (existing) {
+        throw new Error("Diese Dienstnummer wird bereits von einem anderen Mitglied genutzt.");
+      }
+    }
   
     await db.member.update({
       where: { id: memberId },
       data: {
         badgeNumber: data.badgeNumber,
         notes: data.notes,
-        locationId: data.locationId // Neu hinzugefügt
+        locationId: data.locationId 
       }
     });
   
     revalidatePath(`/management/${factionSlug}/members/${memberId}`);
+    revalidatePath(`/management/${factionSlug}/members`);
     return { success: true };
   }

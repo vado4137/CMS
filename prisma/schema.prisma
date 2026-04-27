@@ -103,8 +103,8 @@ model Member {
   faction       Faction  @relation(fields: [factionId], references: [id])
   rankId        String
   rank          Rank     @relation(fields: [rankId], references: [id])
-  traineeRequests    TrainingRequest[] @relation("Trainee")
   instructorRequests TrainingRequest[] @relation("Instructor")
+  authorizedTrainings TrainingType[] @relation("AuthorizedInstructors")
 
 
   // IC-Daten (Die Person im Spiel)
@@ -122,6 +122,7 @@ model Member {
   location     Location? @relation(fields: [locationId], references: [id])
   trainings    Training[]
   absences    Absence[]
+  participatedTrainings TrainingRequest[] @relation("TrainingStudents")
 
 
   // --- NEU: Gegenstück für die Abteilungen ---
@@ -215,6 +216,7 @@ model TrainingType {
   factionId   String
   faction     Faction           @relation(fields: [factionId], references: [id])
   requests    TrainingRequest[]
+  authorizedInstructors Member[] @relation("AuthorizedInstructors")
 }
 
 model TrainingRequest {
@@ -222,8 +224,7 @@ model TrainingRequest {
   status        TrainingStatus @default(OFFEN)
   
   // Der Schüler
-  memberId      String?
-  member        Member?        @relation("Trainee", fields: [memberId], references: [id])
+  students      Member[]       @relation("TrainingStudents")
   
   // Der Ausbilder (optional, bis angenommen)
   instructorId  String?
@@ -237,4 +238,5 @@ model TrainingRequest {
 
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
+  scheduledDate DateTime?
 }

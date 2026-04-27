@@ -7,18 +7,21 @@ import { createTraining } from "@/lib/actions/training"
 import { toast } from "sonner"
 import { GraduationCap, Loader2 } from "lucide-react"
 
-export function CreateTrainingDialog({ factionSlug, trainingTypes }: any) {
+// HIER: 'selectedDate' als Prop hinzugefügt
+export function CreateTrainingDialog({ factionSlug, trainingTypes, selectedDate }: any) {
   const [loading, setLoading] = useState(false)
   const [selectedType, setSelectedType] = useState("")
 
   async function handleSubmit() {
     if (!selectedType) return toast.error("Bitte wähle einen Ausbildungstyp aus.")
+    if (!selectedDate) return toast.error("Kein Datum ausgewählt.")
     
     setLoading(true)
     try {
-      // Nur noch die typeId senden - memberId wird weggelassen
+      // FIX: Wir übergeben jetzt das Objekt genau so, wie 'createTraining' es erwartet
       await createTraining(factionSlug, { 
-        typeId: selectedType 
+        typeId: selectedType,
+        date: selectedDate // Das fehlende Feld hinzugefügt
       })
       toast.success("Offenes Training wurde im Kalender erstellt")
     } catch (e) {
@@ -32,7 +35,7 @@ export function CreateTrainingDialog({ factionSlug, trainingTypes }: any) {
     <div className="space-y-6 pt-4">
       <div className="space-y-2">
         <label className="text-[10px] font-bold uppercase text-slate-400">
-          Welche Ausbildung bietest du an?
+          Welche Ausbildung bietest du am {selectedDate?.toLocaleDateString('de-DE')} an?
         </label>
         <Select onValueChange={setSelectedType}>
           <SelectTrigger className="bg-white">

@@ -5,8 +5,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { AlertCircle } from "lucide-react"
 
-export default async function OnboardingPage() {
+export default async function OnboardingPage(props: { 
+  searchParams: Promise<{ error?: string }> 
+}) {
+  const searchParams = await props.searchParams;
+  const error = searchParams.error;
   const session = await auth()
 
   // 1. Security Check: Nur für eingeloggte User
@@ -25,22 +31,45 @@ export default async function OnboardingPage() {
     "use server"
     const session = await auth()
     if (!session?.user?.id) return
-
+  
     const firstName = formData.get("firstName") as string
     const lastName = formData.get("lastName") as string
     const badgeNumber = parseInt(formData.get("badgeNumber") as string)
-
-    // Für den ersten Test suchen wir uns die erste verfügbare Fraktion (LSPD)
-    // und den ersten verfügbaren Rang
-    const faction = await db.faction.findFirst()
-    const rank = await db.rank.findFirst({ where: { factionId: faction?.id } })
-
-    if (faction && rank) {
+  
+    // 1. Die Fraktion festlegen (Standardmäßig SAFD)
+    const faction = await db.faction.findFirst({ where: { slug: "safd" } })
+    if (!faction) return // Fehlerbehandlung falls keine Faction existiert
+  
+    // 2. VALIDIERUNG: Prüfen, ob die Dienstnummer bereits vergeben ist
+    const badgeExists = await db.member.findFirst({
+      where: {
+        factionId: faction.id,
+        badgeNumber: badgeNumber
+      }
+    })
+  
+    if (badgeExists) {
+      // In einer einfachen Server Action können wir hier eine Fehlermeldung loggen
+      // oder den User mit einem Fehler-Parameter zurückschicken
+      console.error("Dienstnummer bereits vergeben!")
+      return redirect("/onboarding?error=badge_taken")
+    }
+  
+    // 3. RANG-CHECK: Den niedrigsten Rang (Level 0) finden
+    const startRank = await db.rank.findFirst({ 
+      where: { 
+        factionId: faction.id,
+        level: 0 
+      },
+      orderBy: { level: 'asc' }
+    })
+  
+    if (faction && startRank) {
       await db.member.create({
         data: {
           userId: session.user.id,
           factionId: faction.id,
-          rankId: rank.id,
+          rankId: startRank.id,
           firstName,
           lastName,
           badgeNumber,
@@ -60,7 +89,17 @@ export default async function OnboardingPage() {
             Verknüpfe deine Discord-Identität mit deinem IC-Charakter.
           </CardDescription>
         </CardHeader>
+        
         <CardContent>
+        {error === "badge_taken" && (
+            <Alert variant="destructive" className="mb-6 bg-red-50 border-red-200">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Fehler</AlertTitle>
+              <AlertDescription>
+                Diese Dienstnummer ist bereits an einen anderen Officer vergeben.
+              </AlertDescription>
+            </Alert>
+          )}
           <form action={createCharacter} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">

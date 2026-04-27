@@ -17,20 +17,33 @@ export default async function CalendarPage({ params }: { params: Promise<{ slug:
       db.trainingType.findMany({ where: { faction: { slug } } })
     ]);
 
-  return (
-    <div className="space-y-8">
-      <header>
-        <h1 className="text-3xl font-black">Fraktions-Kalender</h1>
-        <p className="text-slate-500 text-sm">Klicke auf einen Tag, um eine Aktion auszuführen.</p>
-      </header>
+    const calendarTrainings = await db.trainingRequest.findMany({
+        where: { 
+          faction: { slug },
+          scheduledDate: { not: null } 
+        },
+        include: { 
+          trainingType: true, 
+          instructor: true, 
+          students: true // GEÄNDERT: 'member' existiert nicht mehr, nutze 'students'
+        }
+    });
 
-      <InteractiveCalendarView 
-        factionSlug={slug}
-        canManageTrainings={isInstructor} // Permission angepasst
-        absences={allAbsences}
-        members={allMembers}       // Neu: Liste der Officer
-        trainingTypes={allTypes}   // Neu: Liste der Typen
-      />
-    </div>
-  );
+      return (
+        <div className="space-y-8">
+          <header>
+            <h1 className="text-3xl font-black">Fraktions-Kalender</h1>
+            <p className="text-slate-500 text-sm">Klicke auf einen Tag, um eine Aktion auszuführen.</p>
+          </header>
+      
+          <InteractiveCalendarView 
+            factionSlug={slug}
+            canManageTrainings={isInstructor}
+            absences={allAbsences}
+            members={allMembers}
+            trainingTypes={allTypes}
+            trainings={calendarTrainings} // WICHTIG: Die Daten hier mit übergeben!
+          />
+        </div>
+      );
 }
