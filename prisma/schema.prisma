@@ -83,6 +83,8 @@ model Faction {
   trainings    Training[]
   trainingTypes    TrainingType[]
   trainingRequests TrainingRequest[]
+  customGuildId String?
+  customChannels Json?
 }
 
 model LandingPage {
@@ -241,3 +243,12 @@ model TrainingRequest {
   updatedAt     DateTime       @updatedAt
   scheduledDate DateTime?
 }
+
+model SystemConfig {
+  id                    String   @id @default("system")
+  discordBotToken       String?  // Maskiert im UI
+  useGlobalDiscord      Boolean  @default(true)
+  globalGuildId         String?  
+  globalChannelSettings Json?    // { "logs": "ID", "abmeldung": "ID", "ausbildung": "ID" }
+}
+

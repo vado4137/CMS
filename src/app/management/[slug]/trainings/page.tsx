@@ -5,6 +5,7 @@ import { RequestTrainingDialog } from "./_components/RequestTrainingDialog";
 import { TrainingStatusDropdown } from "./_components/TrainingStatusDropdown";
 import { Users, GraduationCap, User } from "lucide-react";
 import { JoinTrainingButton } from "./_components/JoinTrainingButton";
+import { DeleteOwnTrainingButton } from "./_components/DeleteOwnTrainingButton";
 
 export default async function TrainingPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -41,6 +42,11 @@ export default async function TrainingPage({ params }: { params: Promise<{ slug:
           // es erstellt hat, aber noch kein spezifischer Einzelschüler (1-zu-1) feststand.
           const isCalendarOffer = !!req.scheduledDate; 
           const isAlreadyStudent = req.students.some(s => s.id === member.id);
+          const canDeleteOwnRequest =
+            req.students.length === 1 &&
+            req.students[0]?.id === member.id &&
+            !req.instructorId &&
+            req.status === "OFFEN";
 
           return (
             <div key={req.id} className="bg-white p-4 rounded-xl border shadow-sm flex items-center justify-between">
@@ -73,6 +79,7 @@ export default async function TrainingPage({ params }: { params: Promise<{ slug:
                 {isCalendarOffer && !isAlreadyStudent && req.instructorId !== member.id && req.status === "OFFEN" && (
                    <JoinTrainingButton requestId={req.id} factionSlug={slug} />
                 )}
+                {canDeleteOwnRequest && <DeleteOwnTrainingButton requestId={req.id} factionSlug={slug} />}
 
                 <div className="text-right">
                   <p className="text-[10px] uppercase font-bold text-slate-400">Status</p>

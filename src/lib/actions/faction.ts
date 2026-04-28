@@ -7,6 +7,8 @@ import { revalidatePath } from "next/cache"
 import { FactionType } from "@prisma/client"
 import { auth } from "@/auth" // HIER: Den Import für Auth.js hinzufügen
 import { redirect } from "next/navigation"
+import { getDiscordDestination } from "../discord/resolver"
+import { sendDiscordNotification } from "@/lib/discord/messenger";
 
 // 1. Validierungsschema definieren
 const CreateFactionSchema = z.object({
@@ -165,6 +167,21 @@ export async function updateLandingPage(factionId: string, blocks: any[]) {
         status: "ACTIVE"
       }
     });
+
+    try {
+      const destination = await getDiscordDestination(factionId, 'logs');
+      
+      if (destination.channelId) {
+        // Hier würdest du deinen Bot oder einen Webhook triggern
+        console.log(`Sende Discord-Log an Channel: ${destination.channelId}`);
+        
+        // Beispielhafter Fetch (wenn du Webhooks nutzt):
+        // await fetch(`URL_VON_CONFIG`, { method: 'POST', body: ... });
+      }
+    } catch (err) {
+      console.error("Discord Logging fehlgeschlagen", err);
+      // Wir werfen keinen Fehler, damit der Beitritt in der DB trotzdem zählt
+    }
   
     revalidatePath("/dashboard");
     return { success: true };
@@ -214,6 +231,12 @@ export async function updateLandingPage(factionId: string, blocks: any[]) {
         badgeNumber,
         status: "ACTIVE"
       }
+    });
+
+    await sendDiscordNotification(faction.id, 'logs', {
+      title: "Neuer Officer eingetreten",
+      description: `**${firstName} ${lastName}** (Dienstnummer: ${badgeNumber}) ist dem ${faction.name} beigetreten.`,
+      color: 0x22c55e // Grün
     });
   
     redirect(`/management/${faction.slug}`);

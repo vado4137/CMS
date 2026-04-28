@@ -30,6 +30,7 @@ export const SETTINGS_NAV = [
   { name: "Ränge & Rechte", href: "/settings/ranks", icon: "shield", permission: "MANAGE_RANKS" },
   { name: "Abteilungen", href: "/settings/departments", icon: "building", permission: "MANAGE_DEPARTMENTS" },
   { name: "Standorte", href: "/settings/locations", icon: "map", permission: "MANAGE_LOCATIONS" },
+  { name: "Discord", href: "/settings/discord", icon: "settings", permission: "MANAGE_FACTION" },
   // Hier werden nur die Typen/Vorlagen verwaltet
   { 
     name: "Trainings-Katalog", 

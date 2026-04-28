@@ -4,7 +4,7 @@ import { CreateFactionForm } from "./_components/CreateFactionForm"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button" // Button importieren
 import Link from "next/link" // Link importieren
-import { Edit3 } from "lucide-react" // Optional: Icon
+import { Edit3, Settings } from "lucide-react" // Optional: Icon
 import { revalidatePath } from "next/cache"
 import { RecruitingToggle } from "./_components/RecruitingToggle"
 import { EditFactionDialog } from "./_components/EditFactionDialog"
@@ -19,9 +19,18 @@ export default async function FactionAdminPage() {
 
   return (
     <div className="container mx-auto p-10 space-y-10">
-      <header>
-        <h1 className="text-4xl font-black uppercase">Faction Creator</h1>
-        <p className="text-muted-foreground">Erstelle und verwalte die Behörden des Portals.</p>
+      <header className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-4xl font-black uppercase">Faction Creator</h1>
+          <p className="text-muted-foreground">Erstelle und verwalte die Behörden des Portals.</p>
+        </div>
+
+        <Link href="/admin/settings/discord">
+          <Button variant="outline" className="gap-2">
+            <Settings className="h-4 w-4" />
+            Settings
+          </Button>
+        </Link>
       </header>
 
       <div className="grid lg:grid-cols-3 gap-10">

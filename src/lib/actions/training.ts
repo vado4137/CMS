@@ -4,6 +4,7 @@ import db from "@/lib/db"
 import { verifyMembership, hasPermission } from "@/lib/dal"
 import { revalidatePath } from "next/cache"
 import { TrainingStatus } from "@prisma/client"
+import { sendDiscordNotification } from "@/lib/discord/messenger"
 
 /**
  * Erstellt eine 1-zu-1 Anfrage von einem Schüler (ohne festes Datum)
@@ -11,15 +12,37 @@ import { TrainingStatus } from "@prisma/client"
 export async function createTrainingRequest(factionSlug: string, typeId: string) {
   const member = await verifyMembership(factionSlug);
   
-  await db.trainingRequest.create({
+  const request = await db.trainingRequest.create({
     data: {
       typeId: typeId,
       factionId: member.factionId,
       status: "OFFEN",
       scheduledDate: null,
       students: { connect: { id: member.id } } // HIER: Nutzt jetzt die students-Relation
-    }
+    },
+    include: {
+      trainingType: {
+        select: { name: true },
+      },
+      students: {
+        select: { firstName: true, lastName: true },
+      },
+    },
   });
+
+  try {
+    const student = request.students[0]
+    const studentName = student ? `${student.firstName} ${student.lastName}` : `${member.firstName} ${member.lastName}`
+
+    await sendDiscordNotification(member.factionId, "ausbildung", {
+      title: "Neue Ausbildungsanfrage",
+      description: `${studentName} hat eine neue Anfrage fuer "${request.trainingType.name}" erstellt.`,
+      color: 0x2563eb,
+      requestId: request.id,
+    })
+  } catch (error) {
+    console.error("Discord-Benachrichtigung fuer Ausbildungsanfrage fehlgeschlagen:", error)
+  }
 
   revalidatePath(`/management/${factionSlug}/trainings`);
   return { success: true };
@@ -165,6 +188,35 @@ export async function createTraining(factionSlug: string, data: { typeId: string
 
   revalidatePath(`/management/${factionSlug}/calendar`);
   return { success: true };
+}
+
+export async function deleteOwnTrainingRequest(factionSlug: string, requestId: string) {
+  const member = await verifyMembership(factionSlug)
+
+  const request = await db.trainingRequest.findUnique({
+    where: { id: requestId },
+    include: { students: { select: { id: true } } },
+  })
+
+  if (!request || request.factionId !== member.factionId) {
+    throw new Error("Anfrage nicht gefunden.")
+  }
+
+  const isOwnSingleRequest =
+    request.students.length === 1 &&
+    request.students[0]?.id === member.id &&
+    !request.instructorId &&
+    request.status === "OFFEN"
+
+  if (!isOwnSingleRequest) {
+    throw new Error("Du kannst nur eigene offene Ausbildungsanfragen löschen.")
+  }
+
+  await db.trainingRequest.delete({ where: { id: requestId } })
+
+  revalidatePath(`/management/${factionSlug}/trainings`)
+  revalidatePath(`/management/${factionSlug}/calendar`)
+  return { success: true }
 }
 
 export async function updateMemberTrainings(
